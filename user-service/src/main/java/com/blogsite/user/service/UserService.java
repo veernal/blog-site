@@ -3,6 +3,7 @@ package com.blogsite.user.service;
 import com.blogsite.common.dto.ApiResponse;
 import com.blogsite.common.dto.UserRegistrationDTO;
 import com.blogsite.common.exception.DuplicateResourceException;
+import com.blogsite.common.exception.ResourceNotFoundException;
 import com.blogsite.user.entity.User;
 import com.blogsite.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -67,11 +68,11 @@ public class UserService {
         log.info("Attempting to authenticate user: {}", email);
         
         User user = userRepository.findActiveUserByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found or inactive: " + email));
         
         if (!passwordEncoder.matches(password, user.getPassword())) {
             log.error("Invalid password for user: {}", email);
-            throw new RuntimeException("Invalid credentials");
+            throw new ResourceNotFoundException("Invalid credentials");
         }
         
         log.info("User authenticated successfully: {}", email);

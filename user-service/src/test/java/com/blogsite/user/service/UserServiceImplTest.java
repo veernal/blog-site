@@ -225,4 +225,109 @@ class UserServiceImplTest {
                 () -> userService.authenticateUser("john.doe@example.com", null)
         );
     }
+    
+    @Test
+    @DisplayName("Find User By Email - Success")
+    void testFindByEmail_Success() {
+        // Given
+        when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(validUser));
+        
+        // When
+        User foundUser = userService.findByEmail("john.doe@example.com");
+        
+        // Then
+        assertNotNull(foundUser);
+        assertEquals("john.doe@example.com", foundUser.getEmail());
+        assertEquals("user-123", foundUser.getUserId());
+        
+        verify(userRepository).findByEmail("john.doe@example.com");
+    }
+    
+    @Test
+    @DisplayName("Find User By Email - User Not Found")
+    void testFindByEmail_NotFound() {
+        // Given
+        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
+        
+        // When & Then
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> userService.findByEmail("nonexistent@example.com")
+        );
+        
+        assertTrue(exception.getMessage().contains("User not found"));
+        verify(userRepository).findByEmail("nonexistent@example.com");
+    }
+    
+    @Test
+    @DisplayName("Register User - Triggers Backup at 20000")
+    void testRegisterUser_TriggersBackupAt20000() {
+        // Given
+        when(userRepository.existsByEmail(anyString())).thenReturn(false);
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
+        when(userRepository.save(any(User.class))).thenReturn(validUser);
+        when(userRepository.countTotalUsers()).thenReturn(20000L);
+        
+        // When
+        userService.registerUser(validRegistrationDTO);
+        
+        // Then
+        verify(backupService).triggerBackup();
+    }
+    
+    @Test
+    @DisplayName("Register User - Does Not Trigger Backup at 10001")
+    void testRegisterUser_NoBackupAt10001() {
+        // Given
+        when(userRepository.existsByEmail(anyString())).thenReturn(false);
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
+        when(userRepository.save(any(User.class))).thenReturn(validUser);
+        when(userRepository.countTotalUsers()).thenReturn(10001L);
+        
+        // When
+        userService.registerUser(validRegistrationDTO);
+        
+        // Then
+        verify(backupService, never()).triggerBackup();
+    }
+    
+    @Test
+    @DisplayName("Register User - Encrypts Password")
+    void testRegisterUser_PasswordEncryption() {
+        // Given
+        when(userRepository.existsByEmail(anyString())).thenReturn(false);
+        when(passwordEncoder.encode("Password123")).thenReturn("super-encrypted-password");
+        when(userRepository.save(any(User.class))).thenReturn(validUser);
+        when(userRepository.countTotalUsers()).thenReturn(100L);
+        
+        // When
+        userService.registerUser(validRegistrationDTO);
+        
+        // Then
+        verify(passwordEncoder).encode("Password123");
+    }
+    
+    @Test
+    @DisplayName("Authenticate User - Empty Email")
+    void testAuthenticateUser_EmptyEmail() {
+        // When & Then
+        assertThrows(
+                Exception.class,
+                () -> userService.authenticateUser("", "Password123")
+        );
+    }
+    
+    @Test
+    @DisplayName("Authenticate User - Empty Password")
+    void testAuthenticateUser_EmptyPassword() {
+        // Given
+        when(userRepository.findActiveUserByEmail(anyString())).thenReturn(Optional.of(validUser));
+        when(passwordEncoder.matches("", "encodedPassword")).thenReturn(false);
+        
+        // When & Then
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> userService.authenticateUser("john.doe@example.com", "")
+        );
+    }
 }
