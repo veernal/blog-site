@@ -1,6 +1,0 @@
-com\blogsite\eventstore\entity\EventStore.class
-com\blogsite\eventstore\EventStoreServiceApplication.class
-com\blogsite\eventstore\repository\EventStoreRepository.class
-com\blogsite\eventstore\service\EventStoreService.class
-com\blogsite\eventstore\entity\EventStore$EventStoreBuilder.class
-com\blogsite\eventstore\controller\EventStoreController.class
