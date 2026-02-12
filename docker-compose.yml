@@ -1,0 +1,203 @@
+version: '3.8'
+
+services:
+  # MySQL Database for User Service
+  mysql:
+    image: mysql:8.0
+    container_name: blogsite-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: userdb
+      MYSQL_USER: bloguser
+      MYSQL_PASSWORD: blogpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init-scripts/mysql:/docker-entrypoint-initdb.d
+    networks:
+      - blogsite-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB for Blog Services
+  mongodb:
+    image: mongo:6.0
+    container_name: blogsite-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: adminpassword
+      MONGO_INITDB_DATABASE: blogdb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+      - ./init-scripts/mongo:/docker-entrypoint-initdb.d
+    networks:
+      - blogsite-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Eureka Server
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - blogsite-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    networks:
+      - blogsite-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # User Service
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    networks:
+      - blogsite-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/userdb
+      - SPRING_DATASOURCE_USERNAME=bloguser
+      - SPRING_DATASOURCE_PASSWORD=blogpassword
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Event Store Service
+  event-store-service:
+    build:
+      context: ./event-store-service
+      dockerfile: Dockerfile
+    container_name: event-store-service
+    ports:
+      - "8084:8084"
+    networks:
+      - blogsite-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATA_MONGODB_URI=mongodb://admin:adminpassword@mongodb:27017/eventstore?authSource=admin
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Blog Command Service
+  blog-command-service:
+    build:
+      context: ./blog-command-service
+      dockerfile: Dockerfile
+    container_name: blog-command-service
+    ports:
+      - "8082:8082"
+    networks:
+      - blogsite-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATA_MONGODB_URI=mongodb://admin:adminpassword@mongodb:27017/blogdb?authSource=admin
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      event-store-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Blog Query Service
+  blog-query-service:
+    build:
+      context: ./blog-query-service
+      dockerfile: Dockerfile
+    container_name: blog-query-service
+    ports:
+      - "8083:8083"
+    networks:
+      - blogsite-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATA_MONGODB_URI=mongodb://admin:adminpassword@mongodb:27017/blogdb?authSource=admin
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  mysql-data:
+  mongodb-data:
+
+networks:
+  blogsite-network:
+    driver: bridge
