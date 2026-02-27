@@ -126,3 +126,13 @@ jwt:
 redis:
   host: localhost
   port: 6379
+
+springdoc:
+  swagger-ui:
+    urls:
+      - url: /swagger/user-service/v3/api-docs
+        name: User Service
+      - url: /swagger/blog-command-service/v3/api-docs
+        name: Blog Command Service
+      - url: /swagger/blog-query-service/v3/api-docs
+        name: Blog Query Service

@@ -5,7 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
-import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -21,41 +21,50 @@ import java.nio.charset.StandardCharsets;
  * Validates JWT tokens for secured endpoints
  */
 @Component
-public class AuthenticationFilter implements GatewayFilter {
-    
+public class AuthenticationFilter extends AbstractGatewayFilterFactory<AuthenticationFilter.Config> {
+
     @Value("${jwt.secret}")
     private String jwtSecret;
-    
-    @Override
-    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        ServerHttpRequest request = exchange.getRequest();
-        
-        if (!request.getHeaders().containsKey("Authorization")) {
-            return onError(exchange, "Missing Authorization header", HttpStatus.UNAUTHORIZED);
-        }
-        
-        String authHeader = request.getHeaders().getFirst("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return onError(exchange, "Invalid Authorization header", HttpStatus.UNAUTHORIZED);
-        }
-        
-        String token = authHeader.substring(7);
-        
-        try {
-            Claims claims = validateToken(token);
-            
-            // Add user information to request headers
-            ServerHttpRequest modifiedRequest = request.mutate()
-                    .header("X-User-Id", claims.getSubject())
-                    .header("X-User-Email", claims.get("email", String.class))
-                    .build();
-            
-            return chain.filter(exchange.mutate().request(modifiedRequest).build());
-        } catch (Exception e) {
-            return onError(exchange, "Invalid or expired token", HttpStatus.UNAUTHORIZED);
-        }
+
+    public AuthenticationFilter() {
+        super(Config.class);
     }
-    
+
+    @Override
+    public GatewayFilter apply(Config config) {
+        return (exchange, chain) -> {
+            ServerHttpRequest request = exchange.getRequest();
+
+            if (!request.getHeaders().containsKey("Authorization")) {
+                return onError(exchange, "Missing Authorization header", HttpStatus.UNAUTHORIZED);
+            }
+
+            String authHeader = request.getHeaders().getFirst("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return onError(exchange, "Invalid Authorization header", HttpStatus.UNAUTHORIZED);
+            }
+
+            String token = authHeader.substring(7);
+
+            try {
+                Claims claims = validateToken(token);
+
+                ServerHttpRequest modifiedRequest = request.mutate()
+                        .header("X-User-Id", claims.getSubject())
+                        .header("X-User-Email", claims.get("email", String.class))
+                        .build();
+
+                return chain.filter(exchange.mutate().request(modifiedRequest).build());
+            } catch (Exception e) {
+                return onError(exchange, "Invalid or expired token", HttpStatus.UNAUTHORIZED);
+            }
+        };
+    }
+
+    public static class Config {
+        // Add config properties if needed
+    }
+
     private Claims validateToken(String token) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         return Jwts.parser()
@@ -64,7 +73,7 @@ public class AuthenticationFilter implements GatewayFilter {
                 .parseSignedClaims(token)
                 .getPayload();
     }
-    
+
     private Mono<Void> onError(ServerWebExchange exchange, String message, HttpStatus status) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(status);

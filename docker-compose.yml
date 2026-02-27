@@ -11,7 +11,7 @@ services:
       MYSQL_USER: bloguser
       MYSQL_PASSWORD: blogpassword
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql-data:/var/lib/mysql
       - ./init-scripts/mysql:/docker-entrypoint-initdb.d
@@ -99,7 +99,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/userdb
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3307/userdb
       - SPRING_DATASOURCE_USERNAME=bloguser
       - SPRING_DATASOURCE_PASSWORD=blogpassword
     depends_on:
