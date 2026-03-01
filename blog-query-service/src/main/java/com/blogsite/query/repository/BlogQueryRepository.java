@@ -26,6 +26,11 @@ public interface BlogQueryRepository extends MongoRepository<BlogReadModel, Stri
     List<BlogReadModel> findByUserIdAndDeletedFalseOrderByCreatedAtDesc(String userId);
     
     /**
+     * Remove any read-model entries whose IDs are not in the provided list
+     */
+    void deleteByBlogIdNotIn(List<String> ids);
+    
+    /**
      * Find blogs by category within date range
      */
     @Query("{ 'category': ?0, 'createdAt': { $gte: ?1, $lte: ?2 }, 'deleted': false }")

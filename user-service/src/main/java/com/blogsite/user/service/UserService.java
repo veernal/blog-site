@@ -54,9 +54,6 @@ public class UserService {
         // Check if backup is needed
         checkAndTriggerBackup();
         
-        // Remove password from response
-        savedUser.setPassword(null);
-        
         return ApiResponse.success(savedUser, "User registered successfully");
     }
     

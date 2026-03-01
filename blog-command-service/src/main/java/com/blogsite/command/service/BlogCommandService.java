@@ -84,15 +84,19 @@ public class BlogCommandService {
     @Transactional
     public ApiResponse<Void> deleteBlog(String blogName, String userId) {
         log.info("Deleting blog: {} for user: {}", blogName, userId);
+        long start = System.currentTimeMillis();
         
         // Find blog
         Blog blog = blogCommandRepository.findByBlogNameAndUserIdAndDeletedFalse(blogName, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Blog '" + blogName + "' not found"));
+        log.info("Lookup took {} ms", System.currentTimeMillis() - start);
         
         // Soft delete
+        start = System.currentTimeMillis();
         blog.setDeleted(true);
         blog.setUpdatedAt(LocalDateTime.now());
         blogCommandRepository.save(blog);
+        log.info("Save took {} ms", System.currentTimeMillis() - start);
         
         log.info("Blog deleted successfully: {}", blogName);
         

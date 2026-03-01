@@ -65,7 +65,7 @@ public class BlogQueryService {
         
         if (blogs.isEmpty()) {
             log.info("No blogs found for user: {}", userId);
-            return List.of();
+            throw new ResourceNotFoundException("No blogs found for user: " + userId);
         }
         
         log.info("Found {} blogs for user: {}", blogs.size(), userId);

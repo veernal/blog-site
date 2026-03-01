@@ -14,11 +14,6 @@ spring:
           predicates:
             - Path=/api/v1.0/blogsite/user/register
             - Method=POST
-          filters:
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 10
-                redis-rate-limiter.burstCapacity: 20
         
         - id: user-login
           uri: lb://user-service
@@ -34,10 +29,6 @@ spring:
             - Method=POST
           filters:
             - AuthenticationFilter
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 5
-                redis-rate-limiter.burstCapacity: 10
         
         - id: blog-delete
           uri: lb://blog-command-service
@@ -67,6 +58,13 @@ spring:
           predicates:
             - Path=/api/v1.0/blogsite/blogs/get/**
             - Method=GET
+        
+        # Administrative sync endpoint (for local development)
+        - id: blog-admin-sync
+          uri: lb://blog-query-service
+          predicates:
+            - Path=/api/v1.0/blogsite/admin/**
+            - Method=POST
       
       globalcors:
         cors-configurations:
@@ -82,7 +80,7 @@ spring:
             allowCredentials: false
 
 server:
-  port: 8080
+  port: 9090
   ssl:
     enabled: false
     # Uncomment for SSL in production

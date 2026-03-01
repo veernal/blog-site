@@ -1,6 +1,7 @@
 package com.blogsite.user.entity;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,6 +36,7 @@ public class User {
     @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
     
+    @JsonIgnore
     @Column(name = "password", nullable = false)
     private String password;
     
