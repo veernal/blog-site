@@ -65,19 +65,28 @@ spring:
           predicates:
             - Path=/api/v1.0/blogsite/admin/**
             - Method=POST
-      
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowedOrigins: "*"
-            allowedMethods:
-              - GET
-              - POST
-              - DELETE
-              - PUT
-              - OPTIONS
-            allowedHeaders: "*"
-            allowCredentials: false
+        
+        # Swagger/OpenAPI Routes for Each Service
+        - id: user-service-swagger
+          uri: lb://user-service
+          predicates:
+            - Path=/swagger/user-service/**
+          filters:
+            - RewritePath=/swagger/user-service/(?<segment>.*), /${segment}
+        
+        - id: blog-command-service-swagger
+          uri: lb://blog-command-service
+          predicates:
+            - Path=/swagger/blog-command-service/**
+          filters:
+            - RewritePath=/swagger/blog-command-service/(?<segment>.*), /${segment}
+        
+        - id: blog-query-service-swagger
+          uri: lb://blog-query-service
+          predicates:
+            - Path=/swagger/blog-query-service/**
+          filters:
+            - RewritePath=/swagger/blog-query-service/(?<segment>.*), /${segment}
 
 server:
   port: 9090
@@ -102,7 +111,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,gateway
+        include: health,info,metrics,gateway,swagger-ui,openapi
   endpoint:
     health:
       show-details: always

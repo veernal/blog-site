@@ -55,7 +55,7 @@ mvn spring-boot:run
 ```
 Wait until you see: "Started EurekaServerApplication"
 
-**Terminal 2 - API Gateway:**
+**Terminal 2 - API Gateway (Port 9090):**
 ```powershell
 cd api-gateway
 mvn spring-boot:run
@@ -87,18 +87,20 @@ Open your browser and check:
 1. **Eureka Dashboard**: http://localhost:8761
    - You should see all services registered
 
-2. **API Gateway Health**: http://localhost:8080/actuator/health
+2. **API Gateway Health**: http://localhost:9090/actuator/health
    - Should return: `{"status":"UP"}`
 
-3. **Swagger UI**: http://localhost:8080/swagger-ui.html
-   - Interactive API documentation
+3. **Swagger UI**: http://localhost:9090/webjars/swagger-ui/index.html
 
+     * `/swagger/user-service/v3/api-docs`
+     * `/swagger/blog-command-service/v3/api-docs`
+     * `/swagger/blog-query-service/v3/api-docs`
 ## Your First API Call
 
 ### 1. Register a User
 
 ```powershell
-curl -X POST http://localhost:8080/api/v1.0/blogsite/user/register `
+curl -X POST http://localhost:9090/api/v1.0/blogsite/user/register `
   -H "Content-Type: application/json" `
   -d '{
     "userName": "John Doe",
@@ -124,7 +126,7 @@ curl -X POST http://localhost:8080/api/v1.0/blogsite/user/register `
 ### 2. Login to Get JWT Token
 
 ```powershell
-curl -X POST http://localhost:8080/api/v1.0/blogsite/user/login `
+curl -X POST http://localhost:9090/api/v1.0/blogsite/user/login `
   -H "Content-Type: application/json" `
   -d '{
     "email": "john.doe@example.com",
@@ -151,7 +153,7 @@ curl -X POST http://localhost:8080/api/v1.0/blogsite/user/login `
 ```powershell
 $token = "YOUR_TOKEN_HERE"
 
-curl -X POST "http://localhost:8080/api/v1.0/blogsite/user/blogs/add/Understanding%20Microservices%20Architecture%20Patterns" `
+curl -X POST "http://localhost:9090/api/v1.0/blogsite/user/blogs/add/Understanding%20Microservices%20Architecture%20Patterns" `
   -H "Content-Type: application/json" `
   -H "Authorization: Bearer $token" `
   -d '{
@@ -165,13 +167,13 @@ curl -X POST "http://localhost:8080/api/v1.0/blogsite/user/blogs/add/Understandi
 ### 4. Search Blogs by Category (No authentication needed)
 
 ```powershell
-curl -X GET "http://localhost:8080/api/v1.0/blogsite/blogs/info/Software%20Engineering%20Best%20Practices%20and%20Modern%20Development"
+curl -X GET "http://localhost:9090/api/v1.0/blogsite/blogs/info/Software%20Engineering%20Best%20Practices%20and%20Modern%20Development"
 ```
 
 ### 5. Get Your Blogs
 
 ```powershell
-curl -X GET http://localhost:8080/api/v1.0/blogsite/user/getall `
+curl -X GET http://localhost:9090/api/v1.0/blogsite/user/getall `
   -H "Authorization: Bearer $token"
 ```
 
@@ -182,7 +184,7 @@ curl -X GET http://localhost:8080/api/v1.0/blogsite/user/getall `
 1. Open Postman
 2. Click **Import** → **Raw Text**
 3. Paste the API examples from `API_TESTING_GUIDE.md`
-4. Create an environment variable `{{baseUrl}}` = `http://localhost:8080`
+3. Create an environment variable `{{baseUrl}}` = `http://localhost:9090`
 5. Create an environment variable `{{token}}` and set it after login
 
 ### Recommended Testing Flow
@@ -294,18 +296,19 @@ docker-compose down -v
 
 ## Next Steps
 
-1. **Explore Swagger UI**: http://localhost:8080/swagger-ui.html
+1. **Explore Swagger UI**: http://localhost:9090/webjars/swagger-ui/index.html
    - Interactive API documentation
-   - Try all endpoints
+   - Try all endpoints from all services
 
 2. **Check Eureka Dashboard**: http://localhost:8761
    - Monitor service health
    - See registered instances
 
 3. **View Actuator Endpoints**:
-   - http://localhost:8080/actuator/health
-   - http://localhost:8081/actuator/health
-   - http://localhost:8082/actuator/health
+   - API Gateway: http://localhost:9090/actuator/health
+   - User Service: http://localhost:8081/actuator/health
+   - Blog Command Service: http://localhost:8082/actuator/health
+   - Blog Query Service: http://localhost:8083/actuator/health
 
 4. **Read Documentation**:
    - `API_TESTING_GUIDE.md` - Complete API examples
@@ -333,7 +336,7 @@ curl -X GET "http://localhost:8080/api/v1.0/blogsite/blogs/get/Software/2026-01-
 ### Delete a Blog
 
 ```powershell
-curl -X DELETE "http://localhost:8080/api/v1.0/blogsite/user/delete/Blog1" `
+curl -X DELETE "http://localhost:9090/api/v1.0/blogsite/user/delete/Blog1" `
   -H "Authorization: Bearer $token"
 ```
 

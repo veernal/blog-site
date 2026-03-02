@@ -33,7 +33,6 @@ public class BlogQueryService {
      * GET /api/v1.0/blogsite/blogs/info/{category}
      */
     @Transactional(readOnly = true)
-    @Cacheable(value = "blogsByCategory", key = "#category")
     public List<BlogResponseDTO> getBlogsByCategory(String category) {
         log.info("Fetching blogs for category: {}", category);
         
@@ -81,7 +80,6 @@ public class BlogQueryService {
      * Uses Builder Pattern (Creational Design Pattern)
      */
     @Transactional(readOnly = true)
-    @Cacheable(value = "blogsByCategoryAndDuration", key = "#category + '-' + #fromDate + '-' + #toDate")
     public List<BlogResponseDTO> getBlogsByCategoryAndDuration(String category, String fromDate, String toDate) {
         log.info("Fetching blogs for category: {} between {} and {}", category, fromDate, toDate);
         
